@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define MAX_LOG_LENGTH 1024
+
+// Cift bagli liste dugumu
+typedef struct LogNode {
+    char log[MAX_LOG_LENGTH];
+    struct LogNode *prev;
+    struct LogNode *next;
+} LogNode;
+
+// Listeye yeni bir dugum ekleme
+LogNode* addLog(LogNode *head, const char *log) {
+    LogNode *newNode = (LogNode*)malloc(sizeof(LogNode));
+    if (!newNode) {
+        perror("Bellek tahsisi basarisiz");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(newNode->log, log, MAX_LOG_LENGTH);
+    newNode->prev = NULL;
+    newNode->next = head;
+
+    if (head != NULL) {
+        head->prev = newNode;
+    }
+
+    return newNode; // Yeni bas dugum
+}
+
+// Listeyi ileri yönde görüntüleme
+void printLogsForward(LogNode *head) {
+    LogNode *current = head;
+    while (current != NULL) {
+        printf("%s", current->log);
+        current = current->next;
+    }
+}
+
+// Listeyi geri yönde görüntüleme
+void printLogsBackward(LogNode *tail) {
+    LogNode *current = tail;
+    while (current != NULL) {
+        printf("%s", current->log);
+        current = current->prev;
+    }
+}
+
+// Bellegi temizleme
+void freeList(LogNode *head) {
+    LogNode *current = head;
+    while (current != NULL) {
+        LogNode *next = current->next;
+        free(current);
+        current = next;
+    }
+}
+
+int main() {
+    FILE *file = fopen("/var/log/syslog", "r");
+    if (!file) {
+        perror("Syslog dosyasi acilamadi");
+        return EXIT_FAILURE;
+    }
+
+    LogNode *head = NULL;
+    char buffer[MAX_LOG_LENGTH];
+    
+    while (fgets(buffer, MAX_LOG_LENGTH, file)) {
+        head = addLog(head, buffer);
+    }
+
+    fclose(file);
+
+    printf("Ileri yönde loglar:\n");
+    printLogsForward(head);
+
+    // Kuyrugu bul
+    LogNode *tail = head;
+    while (tail && tail->next) {
+        tail = tail->next;
+    }
+
+    printf("\nGeri yönde loglar:\n");
+    printLogsBackward(tail);
+
+    freeList(head);
+    return 0;
+}
